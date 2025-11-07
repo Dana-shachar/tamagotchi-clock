@@ -8,7 +8,7 @@ class Clock {
     this.rows = rows;
     this.cellSize = cellSize;
     this.grid = this.createGrid();
-
+    //this.angle = 0;
     this.mood = "happy";
     this.feedCount = 0;
     this.lastFeedTime = millis();
@@ -118,9 +118,10 @@ class Clock {
 
     // Handle stressed mode
     if (this.mood === "stressed") {
-      if (now - this.stressedStartTime > 30000) {
+      if (now - this.stressedStartTime > 5000) {
         if (this.feedCount < 6) {
           this.mood = "dead";
+          //this.angle = 0; // ← freeze hand when dead
         } else {
           this.mood = "happy";
           this.feedCount = 0;
@@ -130,7 +131,10 @@ class Clock {
       }
     }
     // handle dead mode
+    if (this.mood !== "dead") {
+      this.angle = map(second(), 0, 60, 0, 360);
   }
+}
 
   feed() {
     this.feedCount++;
@@ -189,6 +193,6 @@ function draw() {
   clock.updateMood();
   clock.drawGrid();
 
-  let angle = map(second(), 0, 60, 0, 360);
-  clock.drawHand(angle);
+  //let angle = map(second(), 0, 60, 0, 360);
+  clock.drawHand(clock.angle);
 }
