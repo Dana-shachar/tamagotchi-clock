@@ -28,14 +28,14 @@ class Clock {
     return grid;
     }
 
-    drawGrid() {
-      fill(this.drawMood());
-      for (let i = 0; i < this.cols; i++) {
-        for (let j = 0; j < this.rows; j++) {
-          rect(i * this.cellSize, j * this.cellSize, this.cellSize, this.cellSize);
-        }
+  drawGrid() {
+    fill(this.drawMood());
+    for (let i = 0; i < this.cols; i++) {
+      for (let j = 0; j < this.rows; j++) {
+        rect(i * this.cellSize, j * this.cellSize, this.cellSize, this.cellSize);
       }
     }
+  }
 
   clockHand(angle){
     //center of the clock hand
@@ -53,6 +53,7 @@ class Clock {
     }
     return positions;
   }
+
   // this is a method to draw a minimal line length using Bresenham's algorithm for the clock hand
   bresenhamLine(x0, y0, x1, y1) {
     let positions = [];
@@ -104,7 +105,7 @@ class Clock {
     let now = millis();
 
     // Reset feed count every minute if happy
-    if (this.mood === "happy" && now - this.lastFeedTime > 60000) {
+    if (this.mood === "happy" && now - this.lastFeedTime > 5000) {
       if (this.feedCount < 6) {
         this.mood = "stressed";
         this.stressedStartTime = now;
@@ -185,9 +186,9 @@ function setup() {
 
 function draw() {
   background(0);
+  clock.updateMood();
   clock.drawGrid();
 
   let angle = map(second(), 0, 60, 0, 360);
   clock.drawHand(angle);
-
 }
