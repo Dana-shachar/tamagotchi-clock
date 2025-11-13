@@ -1,4 +1,7 @@
 let clock;
+let video;
+let resultText = "";
+let resultParagraph;
 
  //==================== START OF CLASS ====================
 class Clock {
@@ -29,7 +32,7 @@ class Clock {
     }
 
   drawGrid() {
-    fill(this.drawMood());
+    fill(100);
     for (let i = 0; i < this.cols; i++) {
       for (let j = 0; j < this.rows; j++) {
         rect(i * this.cellSize, j * this.cellSize, this.cellSize, this.cellSize);
@@ -94,7 +97,7 @@ class Clock {
     let y1 = Math.round(cy + length * sin(angle));
 
     let positions = this.bresenhamLine(cx, cy, x1, y1);    // draw minimal clock hand using Bresenham's algorithm
-    fill(0);
+    fill(this.drawMood());
 
     for (let pos of positions) {
       rect(pos.x * this.cellSize, pos.y * this.cellSize, this.cellSize, this.cellSize);
@@ -121,7 +124,6 @@ class Clock {
       if (now - this.stressedStartTime > 5000) {
         if (this.feedCount < 6) {
           this.mood = "dead";
-          //this.angle = 0; // ← freeze hand when dead
         } else {
           this.mood = "happy";
           this.feedCount = 0;
@@ -139,12 +141,16 @@ class Clock {
   feed() {
     this.feedCount++;
     this.updateMood();
-
     // reset stressed timer if fed while stressed
-    if (this.mood === "stressed") {
-      this.stressedStartTime = null;
-    }
+  
+  if (this.mood === "stressed" && this.feedCount >= 5) {
+    this.mood = "happy";
+    this.feedCount = 0; // reset counter
+    this.lastFeedTime = millis();
+    this.stressedStartTime = null;
+  } else {
     this.updateMood();
+  }
   }
 
   drawMood(){
@@ -176,6 +182,11 @@ class Clock {
 
 function setup() {
   createCanvas(320, 320);
+
+  video = createCapture(VIDEO);
+  video.size(320, 240);
+  video.parent(document.body); // Places video below buttons
+
   angleMode(DEGREES);
   clock = new Clock(16, 16, 20);
 
@@ -186,6 +197,23 @@ function setup() {
   let resetButton = createButton("Reset");
   resetButton.parent(document.body);
   resetButton.mousePressed(() => clock.reset());
+
+  let analyzeButton = createButton("How productive am I?");
+  analyzeButton.parent(document.body);
+  analyzeButton.mousePressed(analyzeProductivity);
+
+  // Style buttons and paragraph
+  feedButton.style('margin', '5px');
+  resetButton.style('margin', '5px');
+  analyzeButton.style('margin', '5px');
+
+  // Create paragraph for API response
+  resultParagraph = createP("Waiting for response...");
+  resultParagraph.parent(document.body);
+  resultParagraph.style('margin-top', '10px');
+
+  //callOpenAI(); this was just to test the openAI call
+  
 }
 
 function draw() {
@@ -193,6 +221,57 @@ function draw() {
   clock.updateMood();
   clock.drawGrid();
 
-  //let angle = map(second(), 0, 60, 0, 360);
   clock.drawHand(clock.angle);
+  fill(255);
+}
+/* THIS WAS JUST TO TEST OPENAI CALL
+
+async function callOpenAI() {
+  const response = await fetch("https://api.ai.it.cornell.edu/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer sk-PAahKiRavUqLkYk18wCqgg"
+    },
+    body: JSON.stringify({
+      model: "openai.gpt-4o-mini",
+      messages: [{ role: "user", content: "Say something poetic about the sky." }]
+    })
+  });
+
+  const data = await response.json();
+  resultText = data.choices[0].message.content;
+  resultParagraph.html(resultText); // Update paragraph instead of canvas
+
+  console.log(resultText);
+}
+*/
+
+// ✅ productivity analysis
+async function analyzeProductivity() {
+  let imgBase64 = video.get().canvas.toDataURL("image/png");
+
+  const response = await fetch("https://api.ai.it.cornell.edu/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer sk-PAahKiRavUqLkYk18wCqgg"
+    },
+    body: JSON.stringify({
+      model: "openai.gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are an assistant that rates productivity based on facial expression." },
+        { role: "user", content: [
+            { type: "text", text: "Rate this person's productivity from 1 to 10 but vary your response so it won't be the same number all the time - you can be very creative and crazy in your reasoning. your answer will be in the format of NUMBER:your response. Do always start with your score in numeric value followed by a colon." },
+
+            { type: "image_url", image_url: imgBase64 }
+          ]
+        }
+      ]
+    })
+  });
+
+  const data = await response.json();
+  let score = data.choices[0].message.content;
+  resultParagraph.html("Productivity Score: " + score);
 }
