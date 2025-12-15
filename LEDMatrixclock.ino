@@ -17,15 +17,13 @@ Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(
 String incomingData = "";
 int lastButtonState = HIGH;
 
-// ===== ADDED: Function declarations =====
 void parseData(String data);
 void updateMatrix(String matrixData, String colorData);
-// ========================================
 
 void setup() {
   Serial.begin(9600);
   matrix.begin();
-  matrix.setBrightness(50);  // ADDED: Brightness control (adjust 0-255)
+  matrix.setBrightness(50); 
   matrix.show();
   
   pinMode(BUTTON_PIN, INPUT_PULLUP);
